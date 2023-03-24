@@ -88,7 +88,16 @@ impl ProbeUsb {
 
             // Discard data from the serial interface
             let mut buf = [0; 64 as usize];
-            let _ = self.serial.read(&mut buf);
+            let bytes = self.serial.read(&mut buf);
+
+            if let Ok(bytes) = bytes {
+                if bytes > 3 {
+                    let value = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+                    if value == 0xDEADBEEF {
+                        rp2040_hal::rom_data::reset_to_usb_boot(0, 0);
+                    }
+                }
+            }
 
             let r = self.dap_v1.process();
             if r.is_some() {
